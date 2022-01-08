@@ -4,7 +4,10 @@ import { join } from "path";
 import { HardhatConfig, HardhatRuntimeEnvironment } from "hardhat/types";
 import { task } from "hardhat/config";
 import { PaymasterConfig } from "./paymasterConfig";
-type PaymasterConstructorArguments = [RELAY_HUB_ADDRESS: string, GSN_TRUSTED_FORWARDER_ADDRESS: string];
+type PaymasterConstructorArguments = [
+  RELAY_HUB_ADDRESS: string,
+  GSN_TRUSTED_FORWARDER_ADDRESS: string
+];
 const deploy = async (
   hre: HardhatRuntimeEnvironment,
   {
@@ -22,15 +25,19 @@ const deploy = async (
   // Relay hub is starting the transaction (asks the NovelContract if the payment should
   // go through, and then passes on the transaction to the forwarder
   // The paymaster holds and hands out the gas needed for the transactions
-  const paymaster = await Paymaster.deploy(RELAY_HUB_ADDRESS, GSN_TRUSTED_FORWARDER_ADDRESS);
+  const paymaster = await Paymaster.deploy(
+    RELAY_HUB_ADDRESS,
+    GSN_TRUSTED_FORWARDER_ADDRESS
+  );
 
   // wait for it to be deployed
   await paymaster.deployed();
-
-  /
   return {
     address: paymaster.address,
-    constructorArguments: [RELAY_HUB_ADDRESS, GSN_TRUSTED_FORWARDER_ADDRESS] as PaymasterConstructorArguments,
+    constructorArguments: [
+      RELAY_HUB_ADDRESS,
+      GSN_TRUSTED_FORWARDER_ADDRESS,
+    ] as PaymasterConstructorArguments,
   };
 };
 
@@ -81,9 +88,11 @@ export const verify = async (
   address: string,
   constructorArguments: PaymasterConstructorArguments
 ) => {
-  const [RELAY_HUB_ADDRESS, GSN_TRUSTED_FORWARDER_ADDRESS] = constructorArguments;
+  const [RELAY_HUB_ADDRESS, GSN_TRUSTED_FORWARDER_ADDRESS] =
+    constructorArguments;
   if (!RELAY_HUB_ADDRESS) throw new Error("Relay hub address is required");
-  if(!GSN_TRUSTED_FORWARDER_ADDRESS) throw new Error("GSN trusted forwarder address is required");
+  if (!GSN_TRUSTED_FORWARDER_ADDRESS)
+    throw new Error("GSN trusted forwarder address is required");
   try {
     const output = await hre.run("verify:verify", {
       address,
