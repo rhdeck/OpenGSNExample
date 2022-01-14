@@ -41,6 +41,6 @@ yarn hardhat check-paymaster --address 0x....
 
 
 ## TODO
-1. Add mainnet relayhub and forwarders
+1. **DONE** Add mainnet relayhub and forwarders
 2. **DONE** Save paymaster address to storage-  probably inside this repo. 
 3. Test on mainnet

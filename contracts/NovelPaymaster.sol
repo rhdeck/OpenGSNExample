@@ -23,7 +23,7 @@ contract NovelPaymaster is BasePaymaster {
      * Withdrawal implemented for safety reasons in case funds are
      * accidentally sent to the contract
      */
-    function withdraw() external {
+    function withdraw() external onlyOwner {
         uint256 balance = address(this).balance;
         (bool sent, ) = payable(owner()).call{value: balance}("");
         require(sent);

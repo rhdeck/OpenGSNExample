@@ -28,7 +28,7 @@ export default {
       accounts: [ETH_PRIVATE_KEY],
       gasPrice: 20e9,
       // how much compute you need
-      gas: 10e6,
+      gas: 1e6,
     },
     mainnet: {
       url: "https://polygon-mainnet.g.alchemy.com/v2/p6ch7y_To2B3GnKwrdxQXAwEX1GA4TmN",
@@ -45,15 +45,15 @@ export default {
   solidity: "0.8.0",
   etherscan: {
     apiKey: {
-      polygonMumbai: "GETYOUROWN",
-      polygon: "GETYOUROWN",
+      polygonMumbai: "S5K4GZ69KHVTMUV6JISJ7VZ5GHUKQZ64N6",
+      polygon: "S5K4GZ69KHVTMUV6JISJ7VZ5GHUKQZ64N6",
     },
   },
   paymasterInfo: {
     polygonMumbai: {
-      RELAY_HUB_ADDRESS: "0x6C28AfC105e65782D9Ea6F2cA68df84C9e7d750d",
+      RELAY_HUB_ADDRESS: "0x6646cD15d33cE3a6933e36de38990121e8ba2806",
       GSN_TRUSTED_FORWARDER_ADDRESS:
-        "0xdA78a11FD57aF7be2eDD804840eA7f4c2A38801d",
+        "0x4d4581c01A457925410cd3877d17b2fd4553b2C5",
     },
     polygon: {
       RELAY_HUB_ADDRESS: "0x6C28AfC105e65782D9Ea6F2cA68df84C9e7d750d",

@@ -4,6 +4,8 @@ import { join } from "path";
 import { HardhatConfig, HardhatRuntimeEnvironment } from "hardhat/types";
 import { task } from "hardhat/config";
 import { PaymasterConfig } from "./paymasterConfig";
+import { NovelPaymaster__factory } from "../typechain-types/factories/NovelPaymaster__factory";
+// import {} from '../typechain-types/NovelPaymaster';
 type PaymasterConstructorArguments = [
   RELAY_HUB_ADDRESS: string,
   GSN_TRUSTED_FORWARDER_ADDRESS: string
@@ -49,12 +51,27 @@ export const fill = async (
   const paymaster = await get(hre, address);
   console.log("sending to paymasterAddress", paymaster.address);
   // process.exit();
-  const params = {
-    to: paymaster.address,
-    value: hre.ethers.utils.parseUnits(eth, "ether").toHexString(),
-  };
+  // console.log(Object.keys(paymaster));
+  // process.exit();
+  // const txHash = await paymaster.receive({
+  //   value: hre.ethers.utils.parseEther(eth),
+  // });
+
   const lastSigner = (await hre.ethers.getSigners()).pop();
   if (!lastSigner) throw new Error("no signers available");
+  const gas_limit = 1e5;
+  const gas_price = await hre.ethers.provider.getGasPrice();
+  const params = {
+    to: paymaster.address,
+    value: hre.ethers.utils.parseEther(eth),
+    nonce: await hre.ethers.provider.getTransactionCount(
+      lastSigner.address,
+      "latest"
+    ),
+    gasLimit: hre.ethers.utils.hexlify(gas_limit), // 100000
+    gasPrice: hre.ethers.utils.hexlify(gas_price),
+  };
+  console.log("Running transaction with params", params);
   const txHash = await lastSigner.sendTransaction(params);
   await txHash.wait();
   return true;
@@ -78,9 +95,21 @@ export const get = async (hre: HardhatRuntimeEnvironment, address?: string) => {
     address = obj.address;
   }
   if (!address) throw new Error("Paymaster address is required");
-  const Paymaster = await hre.ethers.getContractFactory("NovelPaymaster");
-  const paymaster = await Paymaster.attach(address);
+  const paymaster = NovelPaymaster__factory.connect(
+    address,
+    hre.ethers.provider
+  );
+  console.log("Returning new world order paymaster", paymaster.address);
   return paymaster;
+};
+
+export const check = async (
+  hre: HardhatRuntimeEnvironment,
+  address: string
+) => {
+  const paymaster = await get(hre, address);
+  const balance = await paymaster.getRelayHubDeposit();
+  return balance;
 };
 
 export const verify = async (
@@ -157,7 +186,14 @@ task("check-paymaster", "Check that a contract is whitelisted on the paymaster")
     const isWhitelisted = await paymaster.isEnabledContract(address);
     console.log("isWhitelisted", isWhitelisted);
   });
-
+task("enable-paymaster", "Enable a contract on the paymaster")
+  .addParam("address", "address of the contract")
+  .setAction(async ({ address }, hre: HardhatRuntimeEnvironment) => {
+    const [owner] = await hre.ethers.getSigners();
+    const paymaster = await (await get(hre)).connect(owner);
+    await paymaster.enableContract(address, {});
+    console.log("Contract enabled");
+  });
 task(
   "verify-paymaster",
   "Verify that a contract is whitelisted on the paymaster"
@@ -168,4 +204,11 @@ task(
     else if (!path.startsWith("/")) path = join(process.cwd(), path);
     const { address, constructorArguments } = require(path);
     await verify(hre, address, constructorArguments);
+  });
+
+task("balance-paymaster", "Confirm deposited balance with the relayhub")
+  .addOptionalParam("address", "address of the paymaster")
+  .setAction(async ({ address }, hre: HardhatRuntimeEnvironment) => {
+    const balance = await check(hre, address);
+    console.log("Current balance in wei is ", balance.toString());
   });

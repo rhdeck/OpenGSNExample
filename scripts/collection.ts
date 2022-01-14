@@ -50,7 +50,10 @@ export const deploy = async (
   if (!collectionSymbol) throw new Error("collectionSymbol is required");
   if (!collectionSupplyCap) throw new Error("collectionSupplyCap is required");
   if (!contractMetadataUri) throw new Error("contractMetadataUri is required");
-  if (!paymaster) paymaster = await getPaymaster(hre);
+  if (!paymaster)
+    paymaster = await (
+      await getPaymaster(hre)
+    ).connect((await hre.ethers.getSigners())[0]);
   if (!forwarderAddress)
     forwarderAddress = (hre.config as PaymasterConfig<HardhatConfig>)
       .paymasterInfo[hre.network.name].GSN_TRUSTED_FORWARDER_ADDRESS;
@@ -58,6 +61,14 @@ export const deploy = async (
   const NovelCollection = await hre.ethers.getContractFactory(
     "NovelCollection"
   );
+  console.log("Deploying with ", {
+    collectionName,
+    collectionSymbol,
+    collectionSupplyCap,
+    metadataProofHash,
+    contractMetadataUri,
+    forwarderAddress,
+  });
 
   const novelCollection = await NovelCollection.deploy(
     collectionName,
@@ -70,15 +81,6 @@ export const deploy = async (
 
   // wait for the collection to be deployed
   await novelCollection.deployed();
-
-  // local result (transaction started)
-  console.log("paymaster contract", paymaster.address);
-  const enableContractTxn = await paymaster.enableContract(
-    novelCollection.address
-  );
-
-  // waiting for the xtn to complete
-  await enableContractTxn.wait();
 
   console.log(`Contract Deployed at: ${novelCollection.address}`);
 
@@ -101,6 +103,22 @@ export const deploy = async (
   };
   const path = getPath(hre, collectionSymbol, novelCollection.address);
   writeFileSync(path, JSON.stringify(outputObj, null, 2));
+  // local result (transaction started)
+  for (let c = 1; c < 2; c++) {
+    try {
+      console.log("paymaster contract", paymaster.address);
+      console.log("Enabling collection ", novelCollection.address);
+      const enableContractTxn = await paymaster.enableContract(
+        novelCollection.address
+      );
+      console.log("waiting for the xtn to complete");
+      await enableContractTxn.wait();
+    } catch (e) {
+      if (c === 5) throw e;
+      console.log("Error! Sleeping for ", c, " seconds", (e as Error).message);
+      await new Promise((resolve) => setTimeout(resolve, c * 1000));
+    }
+  }
   return { path, novelCollection };
 };
 export const verify = async (

@@ -6,12 +6,10 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
-// for delegatecall
 // import "./NovelPaymaster.sol";
 
-// add to constructor
-// paymaster which will cover gas cost
-// address _paymasterContractAddress
+// This is done so that OpenSea can cover Matic gas costs: https://docs.opensea.io/docs/polygon-basic-integration
+// import "./MetaTransactions.sol";
 
 // We are using OpenGSN to do the transactions (gasless to the customer)
 contract NovelCollection is Ownable, ERC721Enumerable, BaseRelayRecipient {
@@ -51,9 +49,9 @@ contract NovelCollection is Ownable, ERC721Enumerable, BaseRelayRecipient {
 
     constructor(
         // Name of collection (ex: ToliCollection)
-        string memory _name,
+        string memory _collectionName,
         // The symbol of the token (ex: TOLI)
-        string memory _symbol,
+        string memory _collectionSymbol,
         // Max amount of that token
         uint32 _supplyCap,
         // proves that metadata is valid (ex: like an MD5 hash of the metadata json)
@@ -66,18 +64,17 @@ contract NovelCollection is Ownable, ERC721Enumerable, BaseRelayRecipient {
         // address of the GSN Paymaster
         // doesn't work right now
         // address payable _paymasterContractAddress
-        ERC721(_name, _symbol)
+        ERC721(_collectionName, _collectionSymbol)
     {
         supplyCap = _supplyCap;
         metadataProofHash = _metadataProofHash;
         _cURI = __cURI;
 
-        // _setTrustedForwarder(_forwarder);
+        _setTrustedForwarder(_forwarder);
 
-        // NovelPaymaster novelPaymaster = NovelPaymaster(
-        //     _paymasterContractAddress
-        // );
-        // address(novelPaymaster).delegatecall(
+        // // Doesn't work right now
+        // // NovelPaymaster novelPaymaster = NovelPaymaster(_paymasterContractAddress);
+        // _paymasterContractAddress.delegatecall(
         //     abi.encodeWithSignature("enableContract(address)", address(this))
         // );
     }
@@ -163,12 +160,12 @@ contract NovelCollection is Ownable, ERC721Enumerable, BaseRelayRecipient {
         require(!isRevealed(), "NovelCollection: already revealed");
 
         _btURI = baseTokenURI;
-        startingIndex = uint256(blockhash(block.number - 1)) % supplyCap;
+        //startingIndex = uint256(blockhash(block.number - 1)) % supplyCap;
 
         // Prevent default sequence
-        if (startingIndex == 0) {
-            startingIndex = 1;
-        }
+        //if (startingIndex == 0) {
+        startingIndex = 1;
+        //}
 
         emit Revealed();
     }
@@ -180,18 +177,18 @@ contract NovelCollection is Ownable, ERC721Enumerable, BaseRelayRecipient {
         return startingIndex > 0;
     }
 
-    function walletOfOwner(address _owner)
-        external
-        view
-        returns (uint256[] memory)
-    {
-        uint256 ownerTokenCount = balanceOf(_owner);
-        uint256[] memory tokenIds = new uint256[](ownerTokenCount);
-        for (uint256 i; i < ownerTokenCount; i++) {
-            tokenIds[i] = tokenOfOwnerByIndex(_owner, i);
-        }
-        return tokenIds;
-    }
+    // function walletOfOwner(address _owner)
+    //     external
+    //     view
+    //     returns (uint256[] memory)
+    // {
+    //     uint256 ownerTokenCount = balanceOf(_owner);
+    //     uint256[] memory tokenIds = new uint256[](ownerTokenCount);
+    //     for (uint256 i; i < ownerTokenCount; i++) {
+    //         tokenIds[i] = tokenOfOwnerByIndex(_owner, i);
+    //     }
+    //     return tokenIds;
+    // }
 
     function tokenURI(uint256 tokenId)
         public
@@ -217,7 +214,7 @@ contract NovelCollection is Ownable, ERC721Enumerable, BaseRelayRecipient {
     /**
      * Override isApprovedForAll to auto-approve OS's proxy contract
      */
-    function isApprovedForAll(address _owner, address _operator)
+    function isApprovedForAll(address _thisOwner, address _operator)
         public
         view
         override
@@ -229,14 +226,14 @@ contract NovelCollection is Ownable, ERC721Enumerable, BaseRelayRecipient {
         }
 
         // otherwise, use the default ERC721.isApprovedForAll()
-        return ERC721.isApprovedForAll(_owner, _operator);
+        return ERC721.isApprovedForAll(_thisOwner, _operator);
     }
 
     /**
      * @dev Withdrawal implemented for safety reasons in case funds are
      * accidentally sent to the contract
      */
-    function withdraw() external {
+    function withdraw() external onlyOwner {
         uint256 balance = address(this).balance;
         (bool sent, ) = payable(owner()).call{value: balance}("");
         require(sent);

@@ -4,7 +4,10 @@
     "mumbai": "hardhat --network polygonMumbai",
     "polygon": "hardhat --network polygon",
     "local": "hardhat --network hardhat",
-    "compile": "hardhat compile"
+    "compile": "hardhat compile",
+    "slither": "pipenv run slither .",
+    "install": "pipenv install",
+    "preinstall": "pipenv --version || (echo \"Missing dependency pipenv - run pip3 install pipenv\" && exit 1)"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.4",
@@ -25,9 +28,8 @@
     "hardhat": "^2.8.1",
     "solc": "^0.8.11",
     "ts-node": "^10.4.0",
+    "typechain": "^6.1.0",
     "typescript": "^4.5.4"
   },
-  "dependencies": {
-    "typechain": "^6.1.0"
-  }
+  "dependencies": {}
 }
